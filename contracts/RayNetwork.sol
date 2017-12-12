@@ -2,13 +2,14 @@ pragma solidity ^0.4.14;
 
 import "library/string.sol";
 import "requestHandler.sol";
-import "RayToken.sol";
-
+import "rayToken.sol";
+import "library/stringCasting.sol";
 
 contract RayNetwork{
     using strings for *;
+    using stringcast for string;
     
-    address master;
+    address public master;
     address public requestHandler;
     
     mapping(address => mapping(uint => bool) ) used_datetime;
@@ -42,12 +43,12 @@ contract RayNetwork{
     function recover(string message, string sigs,string lenStr) pure private returns (address) {
         bytes memory sig = hexStrToBytes(sigs);
 
-        bytes memory prefix = "\x19Ethereum Signed Message:\n122";
+        bytes memory prefix = "\x19Ethereum Signed Message:\n";
         //string memory pre = new string(prefix.length + 1)
         /*bytes memory num = bytes32ToBytes32String(6);
         uint len = prefix.length;
         for (uint i = 0; i < num.length; i++) prefix[len++] = num[i];*/
-        bytes32 hash = keccak256(prefix, message);    
+        bytes32 hash = keccak256(prefix,lenStr, message);    
             
         bytes32 r;
         bytes32 s;
@@ -147,25 +148,6 @@ contract RayNetwork{
         if (b < 10) return byte(uint8(b) + 0x30);
         else return byte(uint8(b) + 0x57);
     }
-
-    function parseAddr(string _a) pure private returns (address){
-        _a = _toLower(_a);
-        bytes memory tmp = bytes(_a);
-        uint160 iaddr = 0;
-        uint160 b1;
-        uint160 b2;
-        for (uint i=2; i<2+2*20; i+=2){
-            iaddr *= 256;
-            b1 = uint160(tmp[i]);
-            b2 = uint160(tmp[i+1]);
-            if ((b1 >= 97)&&(b1 <= 102)) b1 -= 87;
-            else if ((b1 >= 48)&&(b1 <= 57)) b1 -= 48;
-            if ((b2 >= 97)&&(b2 <= 102)) b2 -= 87;
-            else if ((b2 >= 48)&&(b2 <= 57)) b2 -= 48;
-            iaddr += (b1*16+b2);
-        }
-        return address(iaddr);
-    }
     
     function toString(address x) pure private returns (string) {
         bytes memory b = new bytes(20);
@@ -174,96 +156,79 @@ contract RayNetwork{
         return string(b);
     }
     
-    function _toLower(string str) pure private returns (string) {
-		bytes memory bStr = bytes(str);
-		bytes memory bLower = new bytes(bStr.length);
-		for (uint i = 0; i < bStr.length; i++) {
-			// Uppercase character...
-			if ((bStr[i] >= 65) && (bStr[i] <= 90)) {
-				// So we add 32 to make it lowercase
-				bLower[i] = bytes1(int(bStr[i]) + 32);
-			} else {
-				bLower[i] = bStr[i];
-			}
-		}
-		return string(bLower);
-    }
-    
-    function stringToUint(string s) constant returns (uint result) {
-        bytes memory b = bytes(s);
-        uint i;
-        result = 0;
-        for (i = 0; i < b.length; i++) {
-            uint c = uint(b[i]);
-            if (c >= 48 && c <= 57) {
-                result = result * 10 + (c - 48);
-            }
-        }
-    }
-    
     function execute(string message, string proof) external{
         var s = message.toSlice();
-        var delim = ",".toSlice();
+        var delim = ";".toSlice();
         var parts = new string[](s.count(delim) + 1);
         
         for(uint i = 0; i < parts.length; i++) {
             parts[i] = s.split(delim).toString();
         }
         
-        require(keccak256(parts[4]) == keccak256("RayNetwork"));
+        handleExecute(parts[0], parts[1], parts[2], parts[3], parts[4], parts[6], parts[5], message, proof);
+    }
+    
+    function handleExecute(string aSender, string functionCall, string callContract, string timeInv, string identify, string messageSize, string rayToSpend, string message, string proof) private{   
+        require(keccak256(identify) == keccak256("RayNetwork"));
         //require(bytes(parts[3].length <7);
         
-        uint time = stringToUint(parts[3]);
+        uint time = timeInv.toUint();
         
-        uint256 raySpend = stringToUint(parts[6]);
+        uint256 raySpend = rayToSpend.toUint();
         
         require(time < block.timestamp);
-        require(time > block.timestamp - (1 * 1 days));
+        require(time > block.timestamp - (10 * 1 days));
         
-        address shouldBe = parseAddr(parts[0]);
+        address shouldBe = aSender.toAddress();
         
         require(used_datetime[shouldBe][time] == false);
         
         used_datetime[shouldBe][time] = true;
         
-        address inv = parseAddr(parts[2]);
+        address inv = callContract.toAddress();
         
-        require(shouldBe == recover(message,proof,parts[5]));
+        require(shouldBe == recover(message,proof,messageSize));
         
-        RequestHandler(requestHandler).invoke(shouldBe,inv,parts[1]);
+        RequestHandler(requestHandler).invoke(shouldBe,inv,functionCall,message,proof);
     
     }
     
-    function executeTest(string message, string proof) constant public returns(address,address,address){
+    function executeTest(string message, string proof) constant public returns(address,address,address,uint){
         var s = message.toSlice();
-        var delim = ",".toSlice();
+        var delim = ";".toSlice();
         var parts = new string[](s.count(delim) + 1);
         
         for(uint i = 0; i < parts.length; i++) {
             parts[i] = s.split(delim).toString();
         }
         
-        address sss = recover(message,proof,parts[5]);
+        address sss = recover(message,proof,parts[6]);
         
-        address shouldBe = parseAddr(parts[0]);
-        address inv = parseAddr(parts[2]);
+        address shouldBe = parts[0].toAddress();
+        address inv = parts[2].toAddress();
+        
+        uint time = parts[3].toUint();
         //if(shouldBe == recover(message,proof)){
             //RequestHandler(requestHandler).invoke(shouldBe,inv,parts[1]);
         //}
-        return (inv,shouldBe,sss);
+        return (inv,shouldBe,sss,time);
     
     }
     
     function Validate(string message, string proof) constant public returns(address){
         var s = message.toSlice();
-        var delim = ",".toSlice();
+        var delim = ";".toSlice();
         var parts = new string[](s.count(delim) + 1);
         
         for(uint i = 0; i < parts.length; i++) {
             parts[i] = s.split(delim).toString();
         }
         
-        return recover(message,proof,parts[5]);
+        return recover(message,proof,parts[6]);
+    }
+    
+    function Recover(string message, string proof) constant public returns(address){
+        return recover(message,proof,"145");
     }
     
 }

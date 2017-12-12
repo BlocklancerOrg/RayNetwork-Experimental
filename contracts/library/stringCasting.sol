@@ -1,8 +1,8 @@
 pragma solidity ^0.4.14;
 
-library stringCasting{
+library stringcast{
     
-    function _toLower(string str) pure private returns (string) {
+    function _toLower(string str) pure internal returns (string) {
 		bytes memory bStr = bytes(str);
 		bytes memory bLower = new bytes(bStr.length);
 		for (uint i = 0; i < bStr.length; i++) {
@@ -17,26 +17,36 @@ library stringCasting{
 		return string(bLower);
     }
     
-    function parseAddr(string self) pure returns (address){
-        string memory _a = _toLower(self);
-        bytes memory tmp = bytes(_a);
-        uint160 iaddr = 0;
-        uint160 b1;
+     function toAddress(string self) pure internal returns (address){
+        self = _toLower(self);
+        
+        bytes memory tmp = bytes(self);
+        
+        uint160 addr = 0;
+        uint160 b;
         uint160 b2;
+        
         for (uint i=2; i<2+2*20; i+=2){
-            iaddr *= 256;
-            b1 = uint160(tmp[i]);
+            
+            addr *= 256;
+            
+            b = uint160(tmp[i]);
             b2 = uint160(tmp[i+1]);
-            if ((b1 >= 97)&&(b1 <= 102)) b1 -= 87;
-            else if ((b1 >= 48)&&(b1 <= 57)) b1 -= 48;
+            
+            if ((b >= 97)&&(b <= 102)) b -= 87;
+            else if ((b >= 48)&&(b <= 57)) b -= 48;
+            
             if ((b2 >= 97)&&(b2 <= 102)) b2 -= 87;
             else if ((b2 >= 48)&&(b2 <= 57)) b2 -= 48;
-            iaddr += (b1*16+b2);
+            
+            addr += (b*16+b2);
+            
         }
-        return address(iaddr);
+        
+        return address(addr);
     }
     
-    function stringToAddress(string str) pure returns (address){
+    function stringToAddress(string str) pure internal returns (address){
         str = _toLower(str);
         
         bytes memory tmp = bytes(str);
@@ -63,6 +73,18 @@ library stringCasting{
         }
         
         return address(addr);
+    }
+    
+    function toUint(string self) constant internal returns (uint result) {
+        bytes memory b = bytes(self);
+        uint i;
+        result = 0;
+        for (i = 0; i < b.length; i++) {
+            uint c = uint(b[i]);
+            if (c >= 48 && c <= 57) {
+                result = result * 10 + (c - 48);
+            }
+        }
     }
     
 }
