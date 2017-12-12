@@ -6498,7 +6498,7 @@ window.Eth = Eth
 signMess.addEventListener('click', function(event) {
       event.preventDefault();
       var from = web3.eth.accounts[0];
-      var text = from + ",f(uint256),0x3c36a0fb5c41685d5511d46bd53224910e4734d2,"+ String(Math.floor(Date.now() / 1000)) + ",RayNetwork,";
+      var text = from + ";addJob(uint256,string,string);0x14bb36678dd452bf27ca83a72b8d0040b3f1cd84;"+ String(Math.floor(Date.now() / 1000)) + ";RayNetwork;500;";
       var len1 = String(text).length;
       var len2 = String(len1.length).length;
       var lenr = String(len1+len2).length + len1;
@@ -21745,7 +21745,7 @@ code.google.com/p/crypto-js
 code.google.com/p/crypto-js/wiki/License
 */
 /** @preserve
-(c) 2012 by Cédric Mesnil. All rights reserved.
+(c) 2012 by CÃ©dric Mesnil. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
