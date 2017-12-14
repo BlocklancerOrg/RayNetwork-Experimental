@@ -4,10 +4,12 @@ import "library/string.sol";
 import "requestHandler.sol";
 import "rayToken.sol";
 import "library/stringCasting.sol";
+import "library/addressCasting.sol";
 
 contract RayNetwork{
     using strings for *;
     using stringcast for string;
+    using addresscast for address;
     
     address public master;
     address public requestHandler;
@@ -41,13 +43,9 @@ contract RayNetwork{
     }
     
     function recover(string message, string sigs,string lenStr) pure private returns (address) {
-        bytes memory sig = hexStrToBytes(sigs);
+        bytes memory sig = sigs.toBytes();
 
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        //string memory pre = new string(prefix.length + 1)
-        /*bytes memory num = bytes32ToBytes32String(6);
-        uint len = prefix.length;
-        for (uint i = 0; i < num.length; i++) prefix[len++] = num[i];*/
         bytes32 hash = keccak256(prefix,lenStr, message);    
             
         bytes32 r;
@@ -77,83 +75,6 @@ contract RayNetwork{
         } else {
           return ecrecover(hash, v, r, s);
         }
-    }
-    
-    function hexStrToBytes(string hex_str) pure
-    private returns (bytes)
-    {
-        //Check hex string is valid
-        if (bytes(hex_str)[0]!='0' ||
-            bytes(hex_str)[1]!='x' ||
-            bytes(hex_str).length%2!=0 ||
-            bytes(hex_str).length<4)
-            {
-                revert();
-            }
-
-        bytes memory bytes_array = new bytes((bytes(hex_str).length-2)/2);
-
-        for (uint i=2;i<bytes(hex_str).length;i+=2)
-        {
-            uint tetrad1=16;
-            uint tetrad2=16;
-
-            //left digit
-            if (uint(bytes(hex_str)[i])>=48 &&uint(bytes(hex_str)[i])<=57)
-                tetrad1=uint(bytes(hex_str)[i])-48;
-
-            //right digit
-            if (uint(bytes(hex_str)[i+1])>=48 &&uint(bytes(hex_str)[i+1])<=57)
-                tetrad2=uint(bytes(hex_str)[i+1])-48;
-
-            //left A->F
-            if (uint(bytes(hex_str)[i])>=65 &&uint(bytes(hex_str)[i])<=70)
-                tetrad1=uint(bytes(hex_str)[i])-65+10;
-
-            //right A->F
-            if (uint(bytes(hex_str)[i+1])>=65 &&uint(bytes(hex_str)[i+1])<=70)
-                tetrad2=uint(bytes(hex_str)[i+1])-65+10;
-
-            //left a->f
-            if (uint(bytes(hex_str)[i])>=97 &&uint(bytes(hex_str)[i])<=102)
-                tetrad1=uint(bytes(hex_str)[i])-97+10;
-
-            //right a->f
-            if (uint(bytes(hex_str)[i+1])>=97 &&uint(bytes(hex_str)[i+1])<=102)
-                tetrad2=uint(bytes(hex_str)[i+1])-97+10;
-
-            //Check all symbols are allowed
-            if (tetrad1==16 || tetrad2==16)
-                revert();
-
-            bytes_array[i/2-1]=byte(16*tetrad1+tetrad2);
-        }
-
-        return bytes_array;
-    }
-    
-    function toAsciiString(address x) pure private returns (string) {
-        bytes memory s = new bytes(40);
-        for (uint i = 0; i < 20; i++) {
-            byte b = byte(uint8(uint(x) / (2**(8*(19 - i)))));
-            byte hi = byte(uint8(b) / 16);
-            byte lo = byte(uint8(b) - 16 * uint8(hi));
-            s[2*i] = char(hi);
-            s[2*i+1] = char(lo);            
-        }
-        return string(s);
-    }
-    
-    function char(byte b) pure private returns (byte c) {
-        if (b < 10) return byte(uint8(b) + 0x30);
-        else return byte(uint8(b) + 0x57);
-    }
-    
-    function toString(address x) pure private returns (string) {
-        bytes memory b = new bytes(20);
-        for (uint i = 0; i < 20; i++)
-            b[i] = byte(uint8(uint(x) / (2**(8*(19 - i)))));
-        return string(b);
     }
     
     function execute(string message, string proof) external{

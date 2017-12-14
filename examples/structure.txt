@@ -1,2 +1,2 @@
 signed_key
-hash_sender,function_to_call,contract_to_call,time,RayNetwork,length_of_this_string
+hash_sender;function_to_call;contract_to_call;time,RayNetwork;gas_cost;length_of_this_string
