@@ -1,2 +1,2 @@
 # RayNetwork-Experimental
-Side-chain scaling solution for Blocklancer
+Scaling solution for Blocklancer
